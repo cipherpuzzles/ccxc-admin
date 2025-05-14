@@ -1,10 +1,13 @@
 <script setup>
 import {
+  HomeOutlined,
   DashboardOutlined,
   UserOutlined,
   LoginOutlined,
   NotificationOutlined,
   FileTextOutlined,
+  FileSearchOutlined,
+  FlagOutlined,
   TeamOutlined,
   HistoryOutlined,
   MessageOutlined,
@@ -13,7 +16,8 @@ import {
   AppstoreOutlined,
   BookOutlined,
   CodeOutlined,
-  ClearOutlined
+  ClearOutlined,
+  MacCommandOutlined
 } from '@ant-design/icons-vue';
 import { useRouter, useRoute } from 'vue-router';
 
@@ -39,7 +43,7 @@ const handleMenuClick = ({ key }) => {
     <a-sub-menu key="system">
       <template #title>
         <span>
-          <setting-outlined />
+          <home-outlined />
           <span>系统</span>
         </span>
       </template>
@@ -68,7 +72,7 @@ const handleMenuClick = ({ key }) => {
     <a-sub-menu key="competition">
       <template #title>
         <span>
-          <team-outlined />
+          <flag-outlined />
           <span>比赛</span>
         </span>
       </template>
@@ -93,7 +97,7 @@ const handleMenuClick = ({ key }) => {
     <a-sub-menu key="puzzle">
       <template #title>
         <span>
-          <appstore-outlined />
+          <file-search-outlined />
           <span>出题</span>
         </span>
       </template>
@@ -122,7 +126,7 @@ const handleMenuClick = ({ key }) => {
     <a-sub-menu key="advanced">
       <template #title>
         <span>
-          <setting-outlined />
+          <mac-command-outlined />
           <span>高级</span>
         </span>
       </template>
