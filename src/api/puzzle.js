@@ -30,4 +30,28 @@ export function deletePuzzleGroup(pgid) {
     url: '/v1/admin/delete-puzzle-group',
     data: { pgid }
   });
+}
+
+// 获取题目列表
+export function getPuzzleList() {
+  return request({
+    url: '/v1/admin/get-puzzle',
+    data: {}
+  });
+}
+
+// 删除题目
+export function deletePuzzle(pid) {
+  return request({
+    url: '/v1/admin/delete-puzzle',
+    data: { pid }
+  });
+}
+
+// 交换题目PID
+export function swapPuzzlePids(pid1, pid2) {
+  return request({
+    url: '/v1/admin/swap-pids',
+    data: { pid1, pid2 }
+  });
 } 
