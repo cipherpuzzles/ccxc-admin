@@ -18,6 +18,11 @@ const props = defineProps({
   height: {
     type: Number,
     default: 300
+  },
+  theme: {
+    type: String,
+    default: 'vs',
+    validator: (value) => ['vs', 'vs-dark', 'hc-black'].includes(value)
   }
 });
 
@@ -32,7 +37,7 @@ const createEditor = () => {
   editor = monaco.editor.create(editorContainer.value, {
     value: props.value,
     language: props.language,
-    theme: 'vs',
+    theme: props.theme,
     minimap: {
       enabled: false
     },
@@ -60,6 +65,13 @@ watch(() => props.value, (newValue) => {
 watch(() => props.language, (newLanguage) => {
   if (editor) {
     monaco.editor.setModelLanguage(editor.getModel(), newLanguage);
+  }
+});
+
+// 监听 theme 属性变化
+watch(() => props.theme, (newTheme) => {
+  if (editor) {
+    monaco.editor.setTheme(newTheme);
   }
 });
 

@@ -38,4 +38,12 @@ export function unlockNextPuzzleForAll(data) {
     url: '/v1/admin/unlock-next-puzzle-forall',
     data
   });
+}
+
+// 清理缓存
+export function purgeCache(op_key) {
+  return request({
+    url: '/v1/admin/purge-cache',
+    data: { op_key }
+  });
 } 
