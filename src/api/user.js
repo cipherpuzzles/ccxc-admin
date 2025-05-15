@@ -46,4 +46,20 @@ export function getLightUserList() {
     url: '/v1/admin/get-l-user-list',
     data: {}
   });
+}
+
+// 获取组织者列表（管理员和出题组成员）
+export function getOrganizerList() {
+  return request({
+    url: '/v1/admin/get-organizer-list',
+    data: {}
+  });
+}
+
+// 设置组织者角色
+export function setOrganizerRole(uid, roleid) {
+  return request({
+    url: '/v1/admin/set-organizer-role',
+    data: { uid, roleid }
+  });
 } 

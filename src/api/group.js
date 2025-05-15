@@ -38,4 +38,44 @@ export function updateGroupHideStatus(gid, is_hide) {
     url: '/v1/admin/update-group-hidestatus',
     data: { gid, is_hide }
   });
+}
+
+// 移除队伍成员
+export function removeGroupMember(gid, uid) {
+  return request({
+    url: '/v1/admin/remove-group-member',
+    data: { gid, uid }
+  });
+}
+
+// 添加队伍成员
+export function addGroupMember(gid, uid, roleid) {
+  return request({
+    url: '/v1/admin/add-group-member',
+    data: { gid, uid, roleid }
+  });
+}
+
+// 删除队伍
+export function deleteGroup(gid) {
+  return request({
+    url: '/v1/admin/delete-group',
+    data: { gid }
+  });
+}
+
+// 创建队伍
+export function createGroup(groupname, profile) {
+  return request({
+    url: '/v1/admin/create-group',
+    data: { groupname, profile }
+  });
+}
+
+// 更新队伍信息
+export function updateGroupProfile(gid, groupname, profile) {
+  return request({
+    url: '/v1/admin/update-group-profile',
+    data: { gid, groupname, profile }
+  });
 } 

@@ -4,27 +4,32 @@
     
     <!-- 筛选条件 -->
     <div class="filter-container">
-      <a-space>
-        <a-radio-group v-model:value="queryParams.order" button-style="solid">
-          <a-radio-button :value="0">默认排序</a-radio-button>
-          <a-radio-button :value="1">综合进度排序</a-radio-button>
-        </a-radio-group>
-        
-        <a-input
-          v-model:value="queryParams.groupname"
-          placeholder="请输入组队名称"
-          style="width: 200px"
-          allow-clear
-        />
-        
-        <a-button type="primary" @click="fetchGroupList">
-          查询
+      <div class="filter-content">
+        <a-space>
+          <a-radio-group v-model:value="queryParams.order" button-style="solid">
+            <a-radio-button :value="0">默认排序</a-radio-button>
+            <a-radio-button :value="1">综合进度排序</a-radio-button>
+          </a-radio-group>
+          
+          <a-input
+            v-model:value="queryParams.groupname"
+            placeholder="请输入组队名称"
+            style="width: 200px"
+            allow-clear
+          />
+          
+          <a-button type="primary" @click="fetchGroupList">
+            查询
+          </a-button>
+          
+          <a-button @click="resetQuery">
+            重置
+          </a-button>
+        </a-space>
+        <a-button type="primary" @click="showGroupModal()">
+          添加队伍
         </a-button>
-        
-        <a-button @click="resetQuery">
-          重置
-        </a-button>
-      </a-space>
+      </div>
     </div>
 
     <!-- 组队列表 -->
@@ -68,9 +73,14 @@
 
         <!-- 操作按钮 -->
         <template v-if="column.key === 'action'">
-          <a-button type="link" @click="handleViewDetail(record)">
-            详情
-          </a-button>
+          <a-space>
+            <a-button type="link" @click="handleViewDetail(record)">
+              详情
+            </a-button>
+            <a-button type="link" @click="showGroupModal(record)">
+              编辑
+            </a-button>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -195,17 +205,129 @@
             </div>
           </div>
         </div>
+
+        <!-- Danger Zone -->
+        <a-collapse v-model:activeKey="dangerZoneActiveKey" ghost>
+          <a-collapse-panel key="danger" header="Danger Zone">
+            <div class="danger-warning">
+              此处操作不可逆，请谨慎操作。
+            </div>
+
+            <!-- 移除成员 -->
+            <div class="danger-operation">
+              <div class="danger-operation-title">从当前队伍中移除成员</div>
+              <div class="danger-operation-content">
+                <a-select
+                  v-model:value="selectedRemoveMember"
+                  style="width: 240px"
+                  placeholder="请选择要移除的成员"
+                >
+                  <a-select-option
+                    v-for="member in currentGroupDetail?.users"
+                    :key="member.uid"
+                    :value="member.uid"
+                  >
+                    {{ member.uid }} / {{ member.username }}
+                  </a-select-option>
+                </a-select>
+                <a-button type="primary" danger @click="handleRemoveMember">
+                  移除
+                </a-button>
+              </div>
+            </div>
+
+            <!-- 添加成员 -->
+            <div class="danger-operation">
+              <div class="danger-operation-title">将成员添加到此队伍</div>
+              <div class="danger-operation-content">
+                <a-select
+                  v-model:value="selectedAddMember"
+                  style="width: 240px"
+                  placeholder="请选择要添加的成员"
+                  show-search
+                  :filter-option="filterOption"
+                >
+                  <a-select-option
+                    v-for="user in allUsers"
+                    :key="user.uid"
+                    :value="user.uid"
+                  >
+                    {{ user.uid }} / {{ user.user_name }}
+                  </a-select-option>
+                </a-select>
+                <a-radio-group v-model:value="selectedRoleId" class="role-radio-group">
+                  <a-radio-button :value="2">队员</a-radio-button>
+                  <a-radio-button :value="3">队长</a-radio-button>
+                </a-radio-group>
+                <a-button type="primary" @click="handleAddMember">
+                  添加
+                </a-button>
+              </div>
+            </div>
+
+            <!-- 删除队伍 -->
+            <div class="danger-operation">
+              <div class="danger-operation-title">删除队伍</div>
+              <div class="danger-operation-content">
+                <a-button type="primary" danger @click="deleteModalVisible = true">
+                  删除队伍
+                </a-button>
+              </div>
+            </div>
+          </a-collapse-panel>
+        </a-collapse>
       </template>
     </a-drawer>
+
+    <!-- 删除队伍确认对话框 -->
+    <a-modal
+      v-model:open="deleteModalVisible"
+      title="删除队伍"
+      :ok-button-props="{ danger: true }"
+      @ok="handleDeleteGroup"
+    >
+      <p>警告：队伍删除后无法恢复，是否继续。</p>
+      <p class="delete-warning">为防止错误操作，只允许删除空队伍，请先清空组队成员。</p>
+    </a-modal>
+
+    <!-- 创建/编辑队伍对话框 -->
+    <a-modal
+      v-model:open="groupModalVisible"
+      :title="isEdit ? '编辑队伍' : '添加队伍'"
+      @ok="handleGroupSubmit"
+      @cancel="closeGroupModal"
+    >
+      <a-form :model="groupForm" layout="vertical">
+        <a-form-item
+          label="队伍名称"
+          :rules="[{ required: true, message: '请输入队伍名称' }]"
+        >
+          <a-input
+            v-model:value="groupForm.groupname"
+            placeholder="请输入队伍名称"
+          />
+        </a-form-item>
+        <a-form-item
+          label="队伍简介"
+        >
+          <a-textarea
+            v-model:value="groupForm.profile"
+            placeholder="请输入队伍简介"
+            :rows="4"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { EyeInvisibleOutlined } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import { getGroupOverview, getProblemList, getGroupDetail, addGroupPowerPoint, updateGroupHideStatus } from '@/api/group';
+import { getGroupOverview, getProblemList, getGroupDetail, addGroupPowerPoint, updateGroupHideStatus, removeGroupMember, addGroupMember, deleteGroup, createGroup, updateGroupProfile } from '@/api/group';
+import { getLightUserList } from '@/api/user';
 import UserRoleTag from '@/components/UserRoleTag.vue';
 
 // 表格列定义
@@ -238,7 +360,7 @@ const columns = [
   {
     title: '操作',
     key: 'action',
-    width: 80,
+    width: 160,
     align: 'center'
   }
 ];
@@ -265,6 +387,23 @@ const powerPointValue = ref(0);
 const powerPointLoading = ref(false);
 const hideStatusValue = ref(false);
 const hideStatusLoading = ref(false);
+
+// Danger Zone 相关状态
+const allUsers = ref([]);
+const selectedRemoveMember = ref(null);
+const selectedAddMember = ref(null);
+const selectedRoleId = ref(2);
+const deleteModalVisible = ref(false);
+const dangerZoneActiveKey = ref([]); // 控制折叠面板的状态
+
+// 队伍表单相关状态
+const groupModalVisible = ref(false);
+const isEdit = ref(false);
+const groupForm = ref({
+  gid: null,
+  groupname: '',
+  profile: ''
+});
 
 // 计算抽屉宽度
 const drawerWidth = computed(() => {
@@ -453,9 +592,149 @@ const handleUpdateHideStatus = async (value) => {
   }
 };
 
+// 获取所有用户列表
+const fetchAllUsers = async () => {
+  try {
+    const result = await getLightUserList();
+    allUsers.value = result.uid_item;
+  } catch (error) {
+    console.error('获取用户列表失败:', error);
+  }
+};
+
+// 处理移除成员
+const handleRemoveMember = async () => {
+  if (!selectedRemoveMember.value) {
+    message.warning('请选择要移除的成员');
+    return;
+  }
+
+  Modal.confirm({
+    title: '确认移除成员',
+    content: '确定要从队伍中移除该成员吗？此操作不可恢复。',
+    okText: '确定',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await removeGroupMember(currentGroup.value.gid, selectedRemoveMember.value);
+        message.success('成员移除成功');
+        fetchGroupDetail(currentGroup.value.gid);
+        selectedRemoveMember.value = null;
+      } catch (error) {
+        console.error('移除成员失败:', error);
+      }
+    }
+  });
+};
+
+// 处理添加成员
+const handleAddMember = async () => {
+  if (!selectedAddMember.value) {
+    message.warning('请选择要添加的成员');
+    return;
+  }
+
+  Modal.confirm({
+    title: '确认添加成员',
+    content: '确定要将该成员添加到队伍中吗？',
+    okText: '确定',
+    okType: 'primary',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await addGroupMember(currentGroup.value.gid, selectedAddMember.value, selectedRoleId.value);
+        message.success('成员添加成功');
+        fetchGroupDetail(currentGroup.value.gid);
+        selectedAddMember.value = null;
+      } catch (error) {
+        console.error('添加成员失败:', error);
+      }
+    }
+  });
+};
+
+// 处理删除队伍
+const handleDeleteGroup = async () => {
+  try {
+    await deleteGroup(currentGroup.value.gid);
+    message.success('队伍删除成功');
+    drawerVisible.value = false;
+    deleteModalVisible.value = false;  // 关闭确认对话框
+    fetchGroupList();
+  } catch (error) {
+    console.error('删除队伍失败:', error);
+  }
+};
+
+// 在 script setup 部分添加 filterOption 函数
+const filterOption = (input, option) => {
+  const text = `${option.value} / ${option.children}`;
+  return text.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+};
+
+// 显示队伍对话框
+const showGroupModal = (record = null) => {
+  isEdit.value = !!record;
+  if (record) {
+    groupForm.value = {
+      gid: record.gid,
+      groupname: record.groupname,
+      profile: record.profile || ''
+    };
+  } else {
+    groupForm.value = {
+      gid: null,
+      groupname: '',
+      profile: ''
+    };
+  }
+  groupModalVisible.value = true;
+};
+
+// 关闭队伍对话框
+const closeGroupModal = () => {
+  groupModalVisible.value = false;
+  groupForm.value = {
+    gid: null,
+    groupname: '',
+    profile: ''
+  };
+};
+
+// 处理队伍表单提交
+const handleGroupSubmit = async () => {
+  if (!groupForm.value.groupname) {
+    message.warning('请输入队伍名称');
+    return;
+  }
+
+  try {
+    if (isEdit.value) {
+      await updateGroupProfile(
+        groupForm.value.gid,
+        groupForm.value.groupname,
+        groupForm.value.profile
+      );
+      message.success('队伍信息更新成功');
+    } else {
+      await createGroup(
+        groupForm.value.groupname,
+        groupForm.value.profile
+      );
+      message.success('队伍创建成功');
+    }
+    closeGroupModal();
+    fetchGroupList();
+  } catch (error) {
+    console.error(isEdit.value ? '更新队伍信息失败:' : '创建队伍失败:', error);
+  }
+};
+
 onMounted(() => {
   fetchGroupList();
   fetchProblemList();
+  fetchAllUsers();
 });
 </script>
 
@@ -476,6 +755,12 @@ h1 {
 
 .filter-container {
   margin-bottom: 16px;
+}
+
+.filter-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .group-profile {
@@ -656,5 +941,47 @@ h1 {
 .status-desc {
   margin-left: 8px;
   color: rgba(0, 0, 0, 0.45);
+}
+
+.danger-warning {
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+  padding: 12px;
+  border-radius: 4px;
+  color: #ff4d4f;
+  margin-bottom: 24px;
+}
+
+.danger-operation {
+  margin-bottom: 24px;
+}
+
+.danger-operation-title {
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.danger-operation-content {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.delete-warning {
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: 8px;
+}
+
+.role-radio-group {
+  margin: 0 12px;
+}
+
+:deep(.ant-collapse-header) {
+  color: #ff4d4f !important;
+  font-weight: 500;
+}
+
+:deep(.ant-collapse-content) {
+  border-top: 1px solid #ff4d4f;
 }
 </style> 

@@ -21,6 +21,7 @@ const PuzzleArticle = () => import('../views/PuzzleArticle.vue')
 const PuzzleScript = () => import('../views/PuzzleScript.vue')
 const CachePurge = () => import('../views/CachePurge.vue')
 const SystemSettings = () => import('../views/SystemSettings.vue')
+const OrganizerManagement = () => import('../views/OrganizerManagement.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -114,6 +115,11 @@ const router = createRouter({
           path: 'systemsettings',
           name: 'systemsettings',
           component: SystemSettings
+        },
+        {
+          path: 'organizermanagement',
+          name: 'organizermanagement',
+          component: OrganizerManagement
         }
       ]
     },

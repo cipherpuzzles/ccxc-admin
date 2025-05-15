@@ -17,7 +17,8 @@ import {
   BookOutlined,
   CodeOutlined,
   ClearOutlined,
-  MacCommandOutlined
+  MacCommandOutlined,
+  UserSwitchOutlined
 } from '@ant-design/icons-vue';
 import { useRouter, useRoute } from 'vue-router';
 
@@ -137,6 +138,10 @@ const handleMenuClick = ({ key }) => {
       <a-menu-item key="/userbackend/systemsettings">
         <setting-outlined />
         <span>系统设置</span>
+      </a-menu-item>
+      <a-menu-item key="/userbackend/organizermanagement">
+        <user-switch-outlined />
+        <span>成员管理</span>
       </a-menu-item>
     </a-sub-menu>
   </a-menu>

@@ -345,6 +345,25 @@
             <a-input v-model:value="currentAdditionalAnswer.extra" placeholder="输入额外动作" />
           </a-form-item>
           
+          <a-form-item>
+            <template #label>
+              <span>
+                不计数
+                <a-tooltip placement="right">
+                  <template #title>
+                    <div>
+                      当用户看到附加答案的个数时，不会包括这些答案的数量
+                    </div>
+                  </template>
+                  <question-circle-outlined style="margin-left: 4px" />
+                </a-tooltip>
+              </span>
+            </template>
+            <a-checkbox v-model:checked="notCountChecked">
+              不计数
+            </a-checkbox>
+          </a-form-item>
+          
           <div class="form-action-buttons">
             <a-button type="primary" @click="handleAdditionalAnswerSubmit">
               提交
@@ -654,7 +673,16 @@ const currentAdditionalAnswer = ref({
   pid: null,
   answer: '',
   message: '',
-  extra: ''
+  extra: '',
+  not_count: 0
+});
+
+// 计算属性：处理复选框的布尔值转换
+const notCountChecked = computed({
+  get: () => currentAdditionalAnswer.value.not_count === 1,
+  set: (value) => {
+    currentAdditionalAnswer.value.not_count = value ? 1 : 0;
+  }
 });
 
 // 附加答案列定义
@@ -673,6 +701,12 @@ const additionalAnswerColumns = [
     title: '消息',
     dataIndex: 'message',
     ellipsis: true,
+  },
+  {
+    title: '不计数',
+    dataIndex: 'not_count',
+    width: 100,
+    customRender: ({ text }) => text === 1 ? '是' : ''
   },
   {
     title: '操作',
@@ -1094,7 +1128,7 @@ const handleEditAdditionalAnswer = (record) => {
 
 // 提交附加答案
 const handleAdditionalAnswerSubmit = async () => {
-  const { aaid, pid, answer, message: answerMessage, extra } = currentAdditionalAnswer.value;
+  const { aaid, pid, answer, message: answerMessage, extra, not_count } = currentAdditionalAnswer.value;
   
   // 验证表单
   if (!answer.trim()) {
@@ -1105,11 +1139,11 @@ const handleAdditionalAnswerSubmit = async () => {
   try {
     if (aaid) {
       // 编辑现有附加答案
-      await editAdditionalAnswer(aaid, currentPuzzle.value.pid, answer, answerMessage, extra);
+      await editAdditionalAnswer(aaid, currentPuzzle.value.pid, answer, answerMessage, extra, not_count);
       message.success('编辑附加答案成功');
     } else {
       // 添加新附加答案
-      await addAdditionalAnswer(currentPuzzle.value.pid, answer, answerMessage, extra);
+      await addAdditionalAnswer(currentPuzzle.value.pid, answer, answerMessage, extra, not_count);
       message.success('添加附加答案成功');
     }
     
@@ -1139,7 +1173,8 @@ const resetAdditionalAnswerForm = () => {
     pid: currentPuzzle.value.pid,
     answer: '',
     message: '',
-    extra: ''
+    extra: '',
+    not_count: 0
   };
 };
 

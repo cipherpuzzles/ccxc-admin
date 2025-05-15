@@ -137,10 +137,10 @@
             
             <a-row :gutter="24">
               <a-col :span="12">
-                <a-form-item label="AI调用的API密钥">
-                  <a-input-password 
-                    v-model:value="formData.AdminAiApiKey" 
-                    placeholder="请输入AI调用的API密钥" 
+                <a-form-item label="AI调用的API密钥 (为了保证密钥安全，保存后不会再回显)">
+                  <a-input 
+                    v-model:value="apiKeyInput" 
+                    :placeholder="formData.AdminAiApiKey ? formData.AdminAiApiKey : '请输入API密钥'"
                   />
                 </a-form-item>
               </a-col>
@@ -183,6 +183,9 @@ const formData = ref({
   AdminAiApiKey: '',
   AdminAiApiModel: ''
 });
+
+// API密钥输入值
+const apiKeyInput = ref('');
 
 // 日期时间选择器的值
 const startDateTime = ref(null);
@@ -239,7 +242,9 @@ const saveSettings = async () => {
       EnableGuestMode: Number(formData.value.EnableGuestMode),
       AdminAiEnable: Number(formData.value.AdminAiEnable),
       StartTime: String(formData.value.StartTime),
-      EndTime: String(formData.value.EndTime)
+      EndTime: String(formData.value.EndTime),
+      // 处理API密钥，如果用户没有输入，则发送null
+      AdminAiApiKey: apiKeyInput.value ? apiKeyInput.value : null
     };
     
     await updateSystemOptions(submitData);

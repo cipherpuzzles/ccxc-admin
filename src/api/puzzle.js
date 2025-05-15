@@ -83,18 +83,18 @@ export function getAdditionalAnswers(pid) {
 }
 
 // 添加附加答案
-export function addAdditionalAnswer(pid, answer, message, extra) {
+export function addAdditionalAnswer(pid, answer, message, extra, not_count) {
   return request({
     url: '/v1/admin/add-additional-answer',
-    data: { pid, answer, message, extra }
+    data: { pid, answer, message, extra, not_count }
   });
 }
 
 // 编辑附加答案
-export function editAdditionalAnswer(aaid, pid, answer, message, extra) {
+export function editAdditionalAnswer(aaid, pid, answer, message, extra, not_count) {
   return request({
     url: '/v1/admin/edit-additional-answer',
-    data: { aaid, pid, answer, message, extra }
+    data: { aaid, pid, answer, message, extra, not_count }
   });
 }
 
