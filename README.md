@@ -159,9 +159,12 @@ export default {
 **题目后端脚本模板**
 
 ```javascript
+// @ts-check
+
 /**
  * @param {Ctx} ctx 全局上下文对象
  * @param {object} request 用户请求
+ * @returns {object} response 返回给用户的数据
  */
 function main(ctx, request) {
     // 使用request处理前端的请求
@@ -189,9 +192,12 @@ _jsonProcessHelper(ctx);
 **高级判题脚本模板**
 
 ```javascript
+// @ts-check
+
 /**
  * @param {Ctx} ctx 全局上下文对象
  * @param {string} answer 用户答案
+ * @returns {boolean} result 判题结果（true-正确 false-错误）
  */
 function main(ctx, answer) {
     // 使用answer判断答案，返回true或者false

@@ -46,4 +46,20 @@ export function purgeCache(op_key) {
     url: '/v1/admin/purge-cache',
     data: { op_key }
   });
+}
+
+// 获取系统选项
+export function getSystemOptions() {
+  return request({
+    url: '/v1/admin/get-system-options',
+    data: {}
+  });
+}
+
+// 更新系统选项
+export function updateSystemOptions(data) {
+  return request({
+    url: '/v1/admin/update-system-options',
+    data
+  });
 } 

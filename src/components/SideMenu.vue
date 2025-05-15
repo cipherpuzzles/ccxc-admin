@@ -134,6 +134,10 @@ const handleMenuClick = ({ key }) => {
         <clear-outlined />
         <span>清理缓存</span>
       </a-menu-item>
+      <a-menu-item key="/userbackend/systemsettings">
+        <setting-outlined />
+        <span>系统设置</span>
+      </a-menu-item>
     </a-sub-menu>
   </a-menu>
 </template>

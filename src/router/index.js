@@ -3,6 +3,7 @@ import Home from '../views/Home.vue'
 import UserBackend from '../views/UserBackend.vue'
 import Overview from '../views/Overview.vue'
 import { useUserStore } from '@/stores/user'
+import axios from 'axios'
 
 // 懒加载其他页面组件
 const User = () => import('../views/User.vue')
@@ -19,6 +20,7 @@ const Puzzle = () => import('../views/Puzzle.vue')
 const PuzzleArticle = () => import('../views/PuzzleArticle.vue')
 const PuzzleScript = () => import('../views/PuzzleScript.vue')
 const CachePurge = () => import('../views/CachePurge.vue')
+const SystemSettings = () => import('../views/SystemSettings.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -107,6 +109,11 @@ const router = createRouter({
           path: 'cachepurge',
           name: 'cachepurge',
           component: CachePurge
+        },
+        {
+          path: 'systemsettings',
+          name: 'systemsettings',
+          component: SystemSettings
         }
       ]
     },
@@ -129,17 +136,19 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   
   // 检查是否是后台页面
   if (to.path.startsWith('/userbackend')) {
     // 首先检查是否登录
     if (!userStore.isLoggedIn()) {
-      const frontEndRoot = import.meta.env.VITE_FRONTEND_ROOT || 'https://ccbc16.cipherpuzzles.com'
-      const redirectUrl = encodeURIComponent(window.location.protocol + "//" + window.location.host + "/ssologin")
-      window.location.href = `${frontEndRoot}/user/sso?app=ccxc&token=sso-from-backend&redirect=${redirectUrl}`
-      return
+        // 通过API获取SSO前缀
+        const ssoPrefixResponse = await axios.get(import.meta.env.VITE_BACKEND_ROOT + '/v1/get-sso-prefix')
+        const frontEndRoot = ssoPrefixResponse.data.prefix
+        const redirectUrl = encodeURIComponent(window.location.protocol + "//" + window.location.host + "/ssologin")
+        window.location.href = `${frontEndRoot}/user/sso?app=ccxc&token=sso-from-backend&redirect=${redirectUrl}`
+        return
     }
     
     // 检查用户角色
