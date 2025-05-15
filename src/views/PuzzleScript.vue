@@ -107,6 +107,7 @@
               language="javascript"
               :height="400"
               theme="vs-dark"
+              :isPuzzleScriptEditor="true"
             />
             <a-button class="expand-btn" @click="expandEditor">
               <fullscreen-outlined />
@@ -140,6 +141,7 @@
           language="javascript"
           :height="fullscreenEditorHeight"
           theme="vs-dark"
+          :isPuzzleScriptEditor="true"
         />
       </div>
     </div>

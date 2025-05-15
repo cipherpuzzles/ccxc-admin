@@ -5,6 +5,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import * as monaco from 'monaco-editor';
+import { loadCustomCompletions, unloadCustomCompletions } from '@/lib/monaco/vueCompletionLoader.js';
+import { loadPuzzleScriptCompletions, unloadPuzzleScriptCompletions } from '@/lib/monaco/puzzleScriptCompletionLoader.js';
 
 const props = defineProps({
   value: {
@@ -23,6 +25,14 @@ const props = defineProps({
     type: String,
     default: 'vs',
     validator: (value) => ['vs', 'vs-dark', 'hc-black'].includes(value)
+  },
+  isScriptEditor: {
+    type: Boolean,
+    default: false
+  },
+  isPuzzleScriptEditor: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -52,6 +62,16 @@ const createEditor = () => {
     const value = editor.getValue();
     emit('update:value', value);
   });
+
+  // 如果是题目脚本编辑器，加载对应的自定义补全
+  if (props.isScriptEditor && (props.language === 'javascript' || props.language === 'typescript')) {
+    loadCustomCompletions(editor, monaco);
+  }
+
+  // 如果是题目后端脚本编辑器，加载对应的自定义补全
+  if (props.isPuzzleScriptEditor && (props.language === 'javascript' || props.language === 'typescript')) {
+    loadPuzzleScriptCompletions(editor, monaco);
+  }
 };
 
 // 监听 value 属性变化
@@ -81,6 +101,16 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (editor) {
+    // 如果是题目脚本编辑器，移除自定义补全
+    if (props.isScriptEditor) {
+      unloadCustomCompletions(editor);
+    }
+    
+    // 如果是题目后端脚本编辑器，移除自定义补全
+    if (props.isPuzzleScriptEditor) {
+      unloadPuzzleScriptCompletions(editor);
+    }
+    
     editor.dispose();
   }
 });

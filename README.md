@@ -159,6 +159,10 @@ export default {
 **题目后端脚本模板**
 
 ```javascript
+/**
+ * @param {Ctx} ctx 全局上下文对象
+ * @param {object} request 用户请求
+ */
 function main(ctx, request) {
     // 使用request处理前端的请求
 
@@ -169,6 +173,9 @@ function main(ctx, request) {
 }
 
 //=======以下是JSON解析与调用脚本，一般不需要修改========
+/**
+ * @param {Ctx} ctx 全局上下文对象
+ */
 function _jsonProcessHelper(ctx) {
     let request = JSON.parse(ctx.request);
     let resBody = main(ctx, request);
@@ -182,6 +189,10 @@ _jsonProcessHelper(ctx);
 **高级判题脚本模板**
 
 ```javascript
+/**
+ * @param {Ctx} ctx 全局上下文对象
+ * @param {string} answer 用户答案
+ */
 function main(ctx, answer) {
     // 使用answer判断答案，返回true或者false
     if (answer.trim().toUpperCase() === "ANSWER") {
@@ -193,6 +204,9 @@ function main(ctx, answer) {
 
 
 //===============以下为入口函数调用脚本，一般不用修改==============
+/**
+ * @param {Ctx} ctx 全局上下文对象
+ */
 function _mainProcessHelper(ctx) {
     let result = main(ctx, ctx.answer);
     ctx.setResult(result);

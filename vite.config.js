@@ -4,10 +4,24 @@ import fs from 'fs'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
+    }
+  },
+  optimizeDeps: {
+    include: ['monaco-editor/esm/vs/editor/editor.api']
+  },
+  build:{
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          monaco: ['monaco-editor/esm/vs/editor/editor.api']
+        }
+      }
     }
   },
   server: {

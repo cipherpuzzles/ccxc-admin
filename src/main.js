@@ -6,7 +6,7 @@ import App from './App.vue'
 import router from './router'
 
 import 'ant-design-vue/dist/reset.css'
-import './utils/monacoWorker'
+import './lib/monaco/monacoWorker'
 
 const app = createApp(App)
 const pinia = createPinia()

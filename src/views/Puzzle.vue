@@ -270,6 +270,7 @@
               language="javascript"
               :height="450"
               theme="vs-dark"
+              :isScriptEditor="true"
             />
             <a-button class="expand-btn" @click="expandScriptEditor">
               <fullscreen-outlined />
@@ -527,6 +528,7 @@
         language="javascript"
         :height="fullscreenEditorHeight"
         theme="vs-dark"
+        :isScriptEditor="true"
       />
     </div>
   </div>
