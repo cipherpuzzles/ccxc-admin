@@ -31,3 +31,19 @@ export function deletePuzzleScript(psid) {
     data: { psid }
   });
 } 
+
+// 获取AI补全
+export function getAiScriptCompletion(data) {
+  return request({
+    url: '/v1/admin/ai-script-completion',
+    data: data
+  });
+}
+
+// 获取AI补全启用状态
+export function getAiScriptEnable() {
+  return request({
+    url: '/v1/admin/get-ai-script-enable',
+    data: {}
+  });
+}

@@ -14,6 +14,11 @@
                   <a-input v-model:value="formData.ProjectName" placeholder="请输入项目名称" />
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="组队人数上限">
+                  <a-input-number v-model:value="formData.MaxGroupSize" :min="1" style="width: 100%" placeholder="请输入组队人数上限" />
+                </a-form-item>
+              </a-col>
             </a-row>
             
             <a-row :gutter="24">
@@ -55,6 +60,17 @@
                   <a-input 
                     v-model:value="formData.GamePrefix" 
                     placeholder="请输入题目独立前端前缀（不要以 / 结尾）" 
+                  />
+                </a-form-item>
+              </a-col>
+            </a-row>
+            
+            <a-row :gutter="24">
+              <a-col :span="12">
+                <a-form-item label="题目Websocket地址前缀">
+                  <a-input 
+                    v-model:value="formData.WebsocketPrefix" 
+                    placeholder="不要以 / 结尾" 
                   />
                 </a-form-item>
               </a-col>
@@ -181,7 +197,9 @@ const formData = ref({
   AdminAiEnable: 0,
   AdminAiApiUrl: '',
   AdminAiApiKey: '',
-  AdminAiApiModel: ''
+  AdminAiApiModel: '',
+  MaxGroupSize: 4,
+  WebsocketPrefix: ''
 });
 
 // API密钥输入值
@@ -241,6 +259,7 @@ const saveSettings = async () => {
       ShowAnalysis: Number(formData.value.ShowAnalysis),
       EnableGuestMode: Number(formData.value.EnableGuestMode),
       AdminAiEnable: Number(formData.value.AdminAiEnable),
+      MaxGroupSize: Number(formData.value.MaxGroupSize),
       StartTime: String(formData.value.StartTime),
       EndTime: String(formData.value.EndTime),
       // 处理API密钥，如果用户没有输入，则发送null

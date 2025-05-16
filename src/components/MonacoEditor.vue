@@ -7,6 +7,8 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import * as monaco from 'monaco-editor';
 import { loadCustomCompletions, unloadCustomCompletions } from '@/lib/monaco/vueCompletionLoader.js';
 import { loadPuzzleScriptCompletions, unloadPuzzleScriptCompletions } from '@/lib/monaco/puzzleScriptCompletionLoader.js';
+import { registerCompletion } from 'monacopilot';
+import { getAiScriptCompletion, getAiScriptEnable } from '@/api/puzzleScript';
 
 const props = defineProps({
   value: {
@@ -41,7 +43,7 @@ const editorContainer = ref(null);
 let editor = null;
 
 // 创建编辑器实例
-const createEditor = () => {
+const createEditor = async () => {
   if (!editorContainer.value) return;
 
   editor = monaco.editor.create(editorContainer.value, {
@@ -56,6 +58,31 @@ const createEditor = () => {
     wordWrap: 'on',
     automaticLayout: true
   });
+
+  // 获取AI补全启用状态
+  let aiEnabled = false;
+  try {
+    const response = await getAiScriptEnable();
+    aiEnabled = response.enable === 1;
+  } catch (error) {
+    console.error("获取AI补全启用状态失败", error);
+  }
+
+  // 只有在启用状态下才注册AI补全
+  if (aiEnabled) {
+    // 注册AI补全
+    registerCompletion(monaco, editor, {
+      language: props.language,
+      endpoint: import.meta.env.VITE_BACKEND_ROOT + "/v1/admin/ai-script-completion",
+      enableCaching: true,
+      requestHandler: async (ctx) => {
+        const res = await getAiScriptCompletion(ctx.body);
+        return {
+          completion: res.completion
+        }
+      }
+    });
+  }
 
   // 监听内容变化
   editor.onDidChangeModelContent(() => {
