@@ -162,6 +162,7 @@
                 <a-select-option :value="0">题目是图片</a-select-option>
                 <a-select-option :value="1">题目是HTML</a-select-option>
                 <a-select-option :value="2">题目是VUE SFC</a-select-option>
+                <a-select-option :value="3">上传题目模块</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -274,6 +275,18 @@
             />
             <a-button class="expand-btn" @click="expandScriptEditor">
               <fullscreen-outlined />
+            </a-button>
+          </div>
+        </a-form-item>
+        
+        <a-form-item v-if="currentPuzzle.type === 3" label="题目脚本">
+          <div style="display: flex; align-items: center;">
+            <a-input v-model:value="currentPuzzle.script" placeholder="题目模块URL" style="flex: 1;" />
+            <a-button type="primary" @click="showModuleUploader" style="margin-left: 8px;">
+              上传题目模块
+            </a-button>
+            <a-button type="link" @click="openModuleInstruction" style="margin-left: 8px;">
+              题目模块说明
             </a-button>
           </div>
         </a-form-item>
@@ -513,6 +526,16 @@
         </div>
       </div>
     </a-modal>
+
+    <!-- 模块上传对话框 -->
+    <a-modal
+      v-model:open="moduleUploaderVisible"
+      title="上传题目模块"
+      width="800px"
+      :footer="null"
+    >
+      <ModuleUploader @uploaded="handleModuleUploaded" />
+    </a-modal>
   </div>
   
   <!-- HTML编辑器全屏模式 -->
@@ -575,6 +598,7 @@ import {
 } from '@/api/puzzle';
 import MonacoEditor from '@/components/MonacoEditor.vue';
 import ImageUploader from '@/components/ImageUploader.vue';
+import ModuleUploader from '@/components/ModuleUploader.vue';
 
 // 表格列定义
 const columns = [
@@ -763,6 +787,9 @@ const tipsColumns = [
     width: 150,
   }
 ];
+
+// 上传模块对话框
+const moduleUploaderVisible = ref(false);
 
 // 获取题目列表
 const fetchPuzzleList = async () => {
@@ -1288,6 +1315,22 @@ const confirmCloseModal = () => {
   });
   // 返回false防止对话框关闭
   return false;
+};
+
+// 显示模块上传对话框
+const showModuleUploader = () => {
+  moduleUploaderVisible.value = true;
+};
+
+// 处理模块上传完成
+const handleModuleUploaded = (url) => {
+  currentPuzzle.value.script = url;
+  moduleUploaderVisible.value = false;
+};
+
+// 打开模块说明文档
+const openModuleInstruction = () => {
+  window.open('https://github.com/cipherpuzzles/ccxc-engine-puzzle-template', '_blank');
 };
 
 onMounted(() => {
