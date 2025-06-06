@@ -1,4 +1,5 @@
 <script setup>
+import { computed, inject, onMounted } from 'vue';
 import {
   HomeOutlined,
   DashboardOutlined,
@@ -16,18 +17,41 @@ import {
   AppstoreOutlined,
   BookOutlined,
   CodeOutlined,
+  CodepenOutlined,
   ClearOutlined,
   MacCommandOutlined,
-  UserSwitchOutlined
+  UserSwitchOutlined,
+  CodepenCircleOutlined
 } from '@ant-design/icons-vue';
+import * as AntdIcons from '@ant-design/icons-vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useUserStore } from '@/stores/user';
 
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore();
+
+const pluginManager = inject('pluginManager');
+
+const pluginMenuItems = computed(() => {
+  return pluginManager.getMenuItems();
+});
 
 const handleMenuClick = ({ key }) => {
   router.push(key);
 };
+
+const resolveIcon = (icon) => {
+  if (!icon) return AntdIcons.AppstoreOutlined;
+  if (AntdIcons[icon]) return AntdIcons[icon];
+  return AntdIcons.AppstoreOutlined;
+}
+
+onMounted(async () => {
+  if (userStore.isLoggedIn()) {
+    await pluginManager.fetchPlugins(router);
+  }
+});
 </script>
 
 <template>
@@ -124,6 +148,19 @@ const handleMenuClick = ({ key }) => {
       </a-menu-item>
     </a-sub-menu>
 
+    <a-sub-menu key="plugins" v-if="pluginMenuItems.length > 0">
+      <template #title>
+        <span>
+          <codepen-outlined />
+          <span>插件</span>
+        </span>
+      </template>
+      <a-menu-item v-for="item in pluginMenuItems" :key="item.path">
+        <component :is="resolveIcon(item.icon)" />
+        <span>{{ item.name }}</span>
+      </a-menu-item>
+    </a-sub-menu>
+
     <a-sub-menu key="advanced">
       <template #title>
         <span>
@@ -142,6 +179,10 @@ const handleMenuClick = ({ key }) => {
       <a-menu-item key="/userbackend/organizermanagement">
         <user-switch-outlined />
         <span>成员管理</span>
+      </a-menu-item>
+      <a-menu-item key="/userbackend/pluginmanagement">
+        <codepen-circle-outlined />
+        <span>插件管理</span>
       </a-menu-item>
     </a-sub-menu>
   </a-menu>

@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { message } from 'ant-design-vue';
-import { useRouter } from 'vue-router';
 import CryptoJS from 'crypto-js';
 import { useUserStore } from '@/stores/user';
 import router from '@/router';

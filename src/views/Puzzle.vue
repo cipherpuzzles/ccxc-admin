@@ -126,7 +126,8 @@
           </div>
           <div class="modal-buttons">
             <a-button @click="confirmCloseModal">取消</a-button>
-            <a-button type="primary" @click="handleSave">提交</a-button>
+            <a-button @click="handleSave(true)" v-if="currentPuzzle.pid">保存</a-button>
+            <a-button type="primary" @click="handleSave(false)">保存并关闭</a-button>
           </div>
         </div>
       </template>
@@ -966,7 +967,7 @@ const showSwapModal = () => {
 };
 
 // 保存题目
-const handleSave = async () => {
+const handleSave = async (saveonly = false) => {
   try {
     const { 
       pid, pgid, title, answer, content,
@@ -1020,7 +1021,9 @@ const handleSave = async () => {
       try {
         await editPuzzle(puzzleData);
         message.success('编辑题目成功');
-        modalVisible.value = false;
+        if (!saveonly) {
+          modalVisible.value = false;
+        }
         // 清除自动保存
         stopAutoSave();
         localStorage.removeItem(autoSaveKey);
