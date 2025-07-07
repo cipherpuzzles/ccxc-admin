@@ -67,7 +67,8 @@
           </div>
           <div class="modal-buttons">
             <a-button @click="confirmCloseModal">取消</a-button>
-            <a-button type="primary" @click="handleSave">提交</a-button>
+            <a-button @click="handleSave(true)" v-if="currentScript.psid">保存</a-button>
+            <a-button type="primary" @click="handleSave(false)">保存并关闭</a-button>
           </div>
         </div>
       </template>
@@ -335,7 +336,7 @@ const expandEditor = () => {
 };
 
 // 保存脚本
-const handleSave = async () => {
+const handleSave = async (saveonly = false) => {
   try {
     const { psid, key, desc, script } = currentScript.value;
     
@@ -352,18 +353,29 @@ const handleSave = async () => {
     
     if (psid) {
       // 编辑现有脚本
-      await editPuzzleScript(psid, key, desc, script);
+      const result = await editPuzzleScript(psid, key, desc, script);
       message.success('编辑脚本成功');
+      // 将新创建的脚本ID设置到当前脚本中，这样后续保存就是编辑操作
+      if (result && result.psid) {
+        currentScript.value.psid = result.psid;
+      }
     } else {
       // 创建新脚本
-      await addPuzzleScript(key, desc, script);
+      const result = await addPuzzleScript(key, desc, script);
       message.success('新建脚本成功');
+      // 将新创建的脚本ID设置到当前脚本中，这样后续保存就是编辑操作
+      if (result && result.psid) {
+        currentScript.value.psid = result.psid;
+      }
     }
     
-    modalVisible.value = false;
-    // 清除自动保存
-    stopAutoSave();
-    localStorage.removeItem(autoSaveKey);
+    if (!saveonly) {
+      modalVisible.value = false;
+      // 清除自动保存
+      stopAutoSave();
+      localStorage.removeItem(autoSaveKey);
+    }
+    
     fetchPuzzleScriptList();
   } catch (error) {
     console.error('保存脚本失败:', error);

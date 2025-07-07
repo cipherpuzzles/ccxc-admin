@@ -1013,11 +1013,13 @@ const handleSave = async (saveonly = false) => {
       analysis
     };
     
+    // 如果是编辑现有题目，添加pid和编辑冲突检测参数
     if (pid) {
-      // 编辑现有题目，添加最后更新时间以检测冲突
       puzzleData.pid = pid;
       puzzleData.last_dt_update = last_dt_update;
-      
+    }
+    
+    if (pid) {      
       try {
         await editPuzzle(puzzleData);
         message.success('编辑题目成功');
@@ -1027,7 +1029,17 @@ const handleSave = async (saveonly = false) => {
         // 清除自动保存
         stopAutoSave();
         localStorage.removeItem(autoSaveKey);
-        fetchPuzzleList();
+        
+        // 重新获取题目列表
+        await fetchPuzzleList();
+        
+        // 更新表单内容和dt_last_update以保证编辑冲突检测正常
+        const updatedPuzzle = puzzleList.value.find(puzz暖昧le => puzzle.pid === pid);
+        if (updatedPuzzle) {
+          // 更新当前表单中的时间戳信息，保持其他用户输入的数据不变
+          currentPuzzle.value.dt_update = updatedPuzzle.dt_update;
+          currentPuzzle.value.last_dt_update = updatedPuzzle.dt_update;
+        }
       } catch (error) {
         // 检查是否为编辑冲突错误
         if (error.message && error.message.includes('编辑冲突')) {

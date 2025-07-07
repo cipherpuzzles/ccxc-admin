@@ -77,7 +77,8 @@
           </div>
           <div class="modal-buttons">
             <a-button @click="confirmCloseModal">取消</a-button>
-            <a-button type="primary" @click="handleSave">提交</a-button>
+            <a-button @click="handleSave(true)" v-if="currentArticle.paid">保存</a-button>
+            <a-button type="primary" @click="handleSave(false)">保存并关闭</a-button>
           </div>
         </div>
       </template>
@@ -365,7 +366,7 @@ const expandEditor = () => {
 };
 
 // 保存文章
-const handleSave = async () => {
+const handleSave = async (saveonly = false) => {
   try {
     const { paid, key, title, content, is_hide } = currentArticle.value;
     
@@ -385,18 +386,29 @@ const handleSave = async () => {
     
     if (paid) {
       // 编辑现有文章
-      await editPuzzleArticle(paid, key, title, content, isHideNum);
+      const result = await editPuzzleArticle(paid, key, title, content, isHideNum);
       message.success('编辑文章成功');
+      // 将新创建的文章ID设置到当前文章中，这样后续保存就是编辑操作
+      if (result && result.paid) {
+        currentArticle.value.paid = result.paid;
+      }
     } else {
       // 创建新文章
-      await addPuzzleArticle(key, title, content, isHideNum);
+      const result = await addPuzzleArticle(key, title, content, isHideNum);
       message.success('新建文章成功');
+      // 将新创建的文章ID设置到当前文章中，这样后续保存就是编辑操作
+      if (result && result.paid) {
+        currentArticle.value.paid = result.paid;
+      }
     }
     
-    modalVisible.value = false;
-    // 清除自动保存
-    stopAutoSave();
-    localStorage.removeItem(autoSaveKey);
+    if (!saveonly) {
+      modalVisible.value = false;
+      // 清除自动保存
+      stopAutoSave();
+      localStorage.removeItem(autoSaveKey);
+    }
+    
     fetchPuzzleArticleList();
   } catch (error) {
     console.error('保存文章失败:', error);

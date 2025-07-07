@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import fs from 'fs'
+import mkcert from 'vite-plugin-mkcert'
 import path from 'path'
 
 export default defineConfig({
   plugins: [
+    mkcert({
+      hosts: ["admin.ccxc.ikp.yt"],
+      source: "coding"
+    }),
     vue(),
   ],
   resolve: {
@@ -25,11 +29,6 @@ export default defineConfig({
     }
   },
   server: {
-    host: 'test.my.ikp.yt',
-    port: 10446,
-    https: {
-      cert: fs.readFileSync('D:/Mycache/nginx-1.17-rtmp-x86/fullchain.pem'),
-      key: fs.readFileSync('D:/Mycache/nginx-1.17-rtmp-x86/privkey.pem')
-    }
+    https: true
   }
 })
