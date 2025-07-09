@@ -1034,7 +1034,7 @@ const handleSave = async (saveonly = false) => {
         await fetchPuzzleList();
         
         // 更新表单内容和dt_last_update以保证编辑冲突检测正常
-        const updatedPuzzle = puzzleList.value.find(puzz暖昧le => puzzle.pid === pid);
+        const updatedPuzzle = puzzleList.value.find(puzzle => puzzle.pid === pid);
         if (updatedPuzzle) {
           // 更新当前表单中的时间戳信息，保持其他用户输入的数据不变
           currentPuzzle.value.dt_update = updatedPuzzle.dt_update;
