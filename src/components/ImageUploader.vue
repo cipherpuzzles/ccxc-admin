@@ -33,6 +33,7 @@
         <div class="batch-actions">
           <a-button type="primary" @click="batchCopyMD">批量复制MD</a-button>
           <a-button style="margin-left: 8px" @click="batchCopyURL">批量复制URL</a-button>
+          <a-button style="margin-left: 8px" @click="batchCopyJSArray">批量复制为JS Array</a-button>
         </div>
       </div>
 
@@ -41,15 +42,20 @@
           <!-- 上传中 -->
           <template v-if="!file.url">
             <div class="file-info">
-              <div class="file-name">{{ file.name }}</div>
-              <a-progress :percent="file.progress" size="small" />
+              <div class="file-details">
+                <div class="file-name">{{ file.name }}</div>
+                <a-progress :percent="file.progress" size="small" />
+              </div>
             </div>
           </template>
           
           <!-- 上传完成 -->
           <template v-else>
             <div class="file-info">
-              <div class="file-url">{{ file.url }}</div>
+              <div class="file-details">
+                <div class="file-name">{{ file.name }}</div>
+                <div class="file-url">{{ file.url }}</div>
+              </div>
               <div class="file-actions">
                 <a-button type="link" @click="copyMD(file)">复制MD</a-button>
                 <a-button type="link" @click="copyURL(file)">复制URL</a-button>
@@ -150,12 +156,17 @@ const copyToClipboard = async (text) => {
 
 // 复制MD格式
 const copyMD = (file) => {
-  copyToClipboard(`![img](${file.url})`);
+  copyToClipboard(`![img-${file.name}](${file.url})`);
 };
 
 // 复制URL
 const copyURL = (file) => {
   copyToClipboard(file.url);
+};
+
+// 复制JS Array格式
+const copyJSArray = (file) => {
+  copyToClipboard(`"${file.url}", // ${file.name}`);
 };
 
 // 批量复制MD
@@ -174,6 +185,15 @@ const batchCopyURL = () => {
     .map(file => file.url)
     .join('\n');
   copyToClipboard(urls);
+};
+
+// 批量复制为JS Array
+const batchCopyJSArray = () => {
+  const jsArray = fileList.value
+    .filter(file => file.url)
+    .map(file => `"${file.url}", // ${file.name}`)
+    .join('\n');
+  copyToClipboard(jsArray);
 };
 
 // 清除列表
@@ -232,16 +252,25 @@ const clearList = () => {
   align-items: center;
 }
 
-.file-name {
-  color: rgba(0, 0, 0, 0.85);
+.file-details {
   flex: 1;
   margin-right: 16px;
 }
 
+.file-name {
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.file-details .ant-progress {
+  margin-top: 4px;
+}
+
 .file-url {
   color: #1890ff;
-  flex: 1;
-  margin-right: 16px;
+  font-size: 12px;
   word-break: break-all;
 }
 
