@@ -85,7 +85,31 @@
         <div class="form-content">
           <a-form :model="formData" layout="vertical">
             <a-row :gutter="24">
-              <a-col :span="8">
+              <a-col :span="6">
+                <a-form-item label="显示缓存的静态排行榜">
+                  <a-switch 
+                    :checked="formData.UseCachedScoreboard === 1" 
+                    @change="val => formData.UseCachedScoreboard = val ? 1 : 0"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :span="6">
+                <a-form-item label="是否显示题目解析">
+                  <a-switch 
+                    :checked="formData.ShowAnalysis === 1" 
+                    @change="val => formData.ShowAnalysis = val ? 1 : 0"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :span="6">
+                <a-form-item label="是否打开访客模式">
+                  <a-switch 
+                    :checked="formData.EnableGuestMode === 1" 
+                    @change="val => formData.EnableGuestMode = val ? 1 : 0"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :span="6">
                 <a-form-item label="用户Session有效期（秒）">
                   <a-input-number 
                     v-model:value="formData.UserSessionTimeout" 
@@ -94,21 +118,23 @@
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="8">
-                <a-form-item label="是否显示题目解析">
-                  <a-switch 
-                    :checked="formData.ShowAnalysis === 1" 
-                    @change="val => formData.ShowAnalysis = val ? 1 : 0"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="8">
-                <a-form-item label="是否打开访客模式">
-                  <a-switch 
-                    :checked="formData.EnableGuestMode === 1" 
-                    @change="val => formData.EnableGuestMode = val ? 1 : 0"
-                  />
-                </a-form-item>
+            </a-row>
+            
+            <a-row :gutter="24" style="margin-top: 16px;">
+              <a-col :span="12">
+                <div class="cache-status-section">
+                  <div class="cache-status-text">
+                    当前缓存状态：{{ cacheStatus }}
+                  </div>
+                  <a-button 
+                    type="default" 
+                    @click="cacheScoreboard" 
+                    :loading="cacheLoading"
+                    style="margin-top: 8px;"
+                  >
+                    缓存当前排行榜
+                  </a-button>
+                </div>
               </a-col>
             </a-row>
           </a-form>
@@ -178,7 +204,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import { getSystemOptions, updateSystemOptions } from '@/api/setting';
+import { getSystemOptions, updateSystemOptions, getCachedScoreboardTime, setCachedScoreboardTime } from '@/api/setting';
 
 // 数据加载状态
 const loading = ref(true);
@@ -199,11 +225,16 @@ const formData = ref({
   AdminAiApiKey: '',
   AdminAiApiModel: '',
   MaxGroupSize: 4,
-  WebsocketPrefix: ''
+  WebsocketPrefix: '',
+  UseCachedScoreboard: 0
 });
 
 // API密钥输入值
 const apiKeyInput = ref('');
+
+// 缓存状态相关
+const cacheStatus = ref('');
+const cacheLoading = ref(false);
 
 // 日期时间选择器的值
 const startDateTime = ref(null);
@@ -226,6 +257,17 @@ const onEndTimeChange = (value) => {
   }
 };
 
+// 获取缓存状态
+const loadCacheStatus = async () => {
+  try {
+    const res = await getCachedScoreboardTime();
+    cacheStatus.value = res.data || '暂无缓存数据';
+  } catch (error) {
+    console.error('获取缓存状态失败:', error);
+    cacheStatus.value = '获取缓存状态失败';
+  }
+};
+
 // 加载系统设置
 const loadSettings = async () => {
   loading.value = true;
@@ -240,11 +282,30 @@ const loadSettings = async () => {
     if (formData.value.EndTime > 0) {
       endDateTime.value = dayjs(parseInt(formData.value.EndTime));
     }
+    
+    // 加载缓存状态
+    await loadCacheStatus();
   } catch (error) {
     console.error('加载系统设置失败:', error);
     message.error('加载系统设置失败');
   } finally {
     loading.value = false;
+  }
+};
+
+// 缓存当前排行榜
+const cacheScoreboard = async () => {
+  cacheLoading.value = true;
+  try {
+    await setCachedScoreboardTime();
+    message.success('缓存排行榜成功');
+    // 重新获取缓存状态
+    await loadCacheStatus();
+  } catch (error) {
+    console.error('缓存排行榜失败:', error);
+    message.error('缓存排行榜失败');
+  } finally {
+    cacheLoading.value = false;
   }
 };
 
@@ -262,6 +323,7 @@ const saveSettings = async () => {
       MaxGroupSize: Number(formData.value.MaxGroupSize),
       StartTime: String(formData.value.StartTime),
       EndTime: String(formData.value.EndTime),
+      UseCachedScoreboard: Number(formData.value.UseCachedScoreboard),
       // 处理API密钥，如果用户没有输入，则发送null
       AdminAiApiKey: apiKeyInput.value ? apiKeyInput.value : null
     };
@@ -322,5 +384,15 @@ h2 {
 .description-text {
   margin-bottom: 16px;
   color: rgba(0, 0, 0, 0.65);
+}
+
+.cache-status-section {
+  padding: 16px 0;
+}
+
+.cache-status-text {
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 14px;
+  margin-bottom: 8px;
 }
 </style> 

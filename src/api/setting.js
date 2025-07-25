@@ -62,4 +62,20 @@ export function updateSystemOptions(data) {
     url: '/v1/admin/update-system-options',
     data
   });
+}
+
+// 获取缓存的排行榜时间
+export function getCachedScoreboardTime() {
+  return request({
+    url: '/v1/admin/get-cached-scoreboard-time',
+    data: {}
+  });
+}
+
+// 设置缓存的排行榜时间
+export function setCachedScoreboardTime() {
+  return request({
+    url: '/v1/admin/set-cached-scoreboard-time',
+    data: {}
+  });
 } 

@@ -9,9 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vue/compiler-sfc": "^3.5.17",
     "ant-design-vue": "^4.2.6",
     "axios": "^1.6.7",
     "crypto-js": "^4.2.0",
+    "dayjs": "^1.11.13",
     "isomorphic-dompurify": "^2.24.0",
     "marked": "^15.0.11",
     "monaco-editor": "^0.52.2",
@@ -19,7 +21,8 @@
     "pinia": "^3.0.2",
     "pinia-plugin-persistedstate": "^4.3.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "y-websocket": "^3.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.3",

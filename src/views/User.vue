@@ -17,6 +17,12 @@
         <a-form-item label="邮箱">
           <a-input v-model:value="queryParams.email" placeholder="请输入邮箱" allow-clear />
         </a-form-item>
+        <a-form-item label="测试用户">
+          <a-select v-model:value="queryParams.is_beta_user" style="width: 120px">
+            <a-select-option :value="0">全部</a-select-option>
+            <a-select-option :value="1">测试用户</a-select-option>
+          </a-select>
+        </a-form-item>
         <a-form-item>
           <a-button type="primary" @click="handleSearch">查询</a-button>
           <a-button style="margin-left: 8px" @click="handleReset">重置</a-button>
@@ -53,12 +59,22 @@
         
         <!-- 用户角色 -->
         <template v-else-if="column.key === 'role'">
-          <a-space>
-            <user-role-tag :role-id="record.roleid" />
-            <a-tooltip v-if="record.is_beta_user" title="内测用户">
-              <crown-outlined class="beta-icon" />
-            </a-tooltip>
-          </a-space>
+          <div>
+            <a-space>
+              <user-role-tag :role-id="record.roleid" />
+              <a-tooltip v-if="record.is_beta_user" title="内测用户">
+                <crown-outlined class="beta-icon" />
+              </a-tooltip>
+            </a-space>
+            <div 
+              v-if="record.gid && record.gid !== 0 && record.groupname" 
+              class="group-name"
+              @click="handleGoToGroup(record.gid)"
+              :title="record.groupname"
+            >
+              {{ record.groupname.length > 10 ? record.groupname.substring(0, 9) + '...' : record.groupname }}
+            </div>
+          </div>
         </template>
 
         <!-- 在线状态 -->
@@ -99,6 +115,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import { CrownOutlined } from '@ant-design/icons-vue';
 import dayjs from 'dayjs';
@@ -111,11 +128,14 @@ import {
 } from '@/api/user';
 import UserRoleTag from '@/components/UserRoleTag.vue';
 
+const router = useRouter();
+
 // 查询参数
 const queryParams = ref({
   is_online: 0,
   username: '',
   email: '',
+  is_beta_user: 0,
   page_num: 1,
   page_size: 20
 });
@@ -199,6 +219,7 @@ const handleReset = () => {
     is_online: 0,
     username: '',
     email: '',
+    is_beta_user: 0,
     page_num: 1,
     page_size: 20
   };
@@ -239,6 +260,13 @@ const handleSetBetaUser = async (record) => {
   } catch (error) {
     console.error('操作失败:', error);
   }
+};
+
+const handleGoToGroup = (gid) => {
+  router.push({
+    name: 'group',
+    query: { gid }
+  });
 };
 
 onMounted(() => {
@@ -301,5 +329,18 @@ h1 {
 .beta-icon {
   color: #faad14;
   cursor: help;
+}
+
+.group-name {
+  cursor: pointer;
+  color: #1890ff;
+  font-size: 12px;
+  margin-top: 4px;
+  transition: color 0.2s;
+}
+
+.group-name:hover {
+  color: #40a9ff;
+  text-decoration: underline;
 }
 </style> 

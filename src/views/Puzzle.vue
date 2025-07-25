@@ -180,9 +180,14 @@
           </a-col>
         </a-row>
         <a-row :gutter="16">
-          <a-col :span="12">
+          <a-col :span="6">
             <a-form-item label="题目备注">
               <a-input v-model:value="currentPuzzle.desc" placeholder="列表中显示的备注" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="作者">
+              <a-input v-model:value="currentPuzzle.author" placeholder="作者仅在解析中显示" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -654,6 +659,7 @@ const currentPuzzle = ref({
   desc: '',
   type: 0,
   title: '',
+  author: '',
   extend_data: '',
   extend_content: '',
   content: '',
@@ -907,6 +913,7 @@ const resetCurrentPuzzle = () => {
     desc: '',
     type: 0,
     title: '',
+    author: '',
     extend_data: '',
     extend_content: '',
     content: '',
@@ -970,7 +977,7 @@ const showSwapModal = () => {
 const handleSave = async (saveonly = false) => {
   try {
     const { 
-      pid, pgid, title, answer, content,
+      pid, pgid, title, author, answer, content,
       desc, type, extend_data, extend_content,
       image, html, script, answer_type,
       check_answer_type, check_answer_function,
@@ -999,6 +1006,7 @@ const handleSave = async (saveonly = false) => {
       desc,
       type,
       title,
+      author,
       extend_data,
       extend_content,
       content,
@@ -1230,11 +1238,11 @@ const showTipsModal = async () => {
     return;
   }
   
-  // 初始化表单
-  resetTipForm();
-  
-  // 加载提示数据
+  // 先加载提示数据
   await fetchTips();
+  
+  // 然后初始化表单（这样可以根据已有提示计算默认排序值）
+  resetTipForm();
   
   // 显示模态框
   tipsModalVisible.value = true;
@@ -1300,9 +1308,16 @@ const handleDeleteTip = async (ptid) => {
 
 // 重置提示表单
 const resetTipForm = () => {
+  // 计算默认排序值：当前已有提示的最大排序值+1，如果没有提示则为1
+  let defaultOrder = 1;
+  if (tips.value && tips.value.length > 0) {
+    const maxOrder = Math.max(...tips.value.map(tip => tip.order || 0));
+    defaultOrder = maxOrder + 1;
+  }
+  
   currentTip.value = {
     ptid: null,
-    order: 0,
+    order: defaultOrder,
     pid: currentPuzzle.value.pid,
     title: '',
     content: '',

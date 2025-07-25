@@ -1,10 +1,14 @@
 import request from '@/utils/request';
 
 // 获取组队列表
-export function getGroupOverview(order, groupname, page_num, page_size = 10) {
+export function getGroupOverview(order, groupname, page_num, page_size = 10, gid = null) {
+  const data = { order, groupname, page_num, page_size };
+  if (gid !== null) {
+    data.gid = gid;
+  }
   return request({
     url: '/v1/admin/get-group-overview',
-    data: { order, groupname, page_num, page_size }
+    data
   });
 }
 
@@ -77,5 +81,13 @@ export function updateGroupProfile(gid, groupname, profile) {
   return request({
     url: '/v1/admin/update-group-profile',
     data: { gid, groupname, profile }
+  });
+}
+
+// 获取模拟登录会话
+export function getSimLoginSession(gid) {
+  return request({
+    url: '/v1/admin/get-sim-login-session',
+    data: { gid }
   });
 } 

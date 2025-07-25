@@ -56,8 +56,8 @@
 
         <!-- 完成情况 -->
         <template v-if="column.key === 'progress'">
-          <div>解锁情况：{{ record.unlock_p1_count }} 分区 {{ record.unlock_p2_count }} 小题</div>
-          <div>完成情况：{{ record.finish_p1_count }} 分区 {{ record.finish_p2_count }} 小题 {{ record.finish_meta_count }} Meta</div>
+          <div>解锁：{{ record.unlock_p1_count }} 分区 {{ record.unlock_p2_count }} 小题</div>
+          <div>完成：{{ record.finish_p1_count }} 分区 {{ record.finish_p2_count }} 小题 {{ record.finish_meta_count }} Meta</div>
         </template>
 
         <!-- 完赛状态 -->
@@ -142,7 +142,18 @@
                 placement="bottom"
               >
                 <template v-slot:title>
-                  <div v-html="getProblemTooltip(problem)"></div>
+                  <div class="problem-tooltip-content">
+                    <div class="problem-title">{{ problem.title }}</div>
+                    <a-button 
+                      type="primary" 
+                      size="small" 
+                      @click="handleSimulateLogin(problem.pid)"
+                      class="simulate-btn"
+                    >
+                      该队视角预览
+                    </a-button>
+                    <div class="problem-details" v-html="getProblemTooltipDetails(problem)"></div>
+                  </div>
                 </template>
                 <div 
                   class="problem-tag"
@@ -322,13 +333,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { EyeInvisibleOutlined } from '@ant-design/icons-vue';
 import { message, Modal } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import { getGroupOverview, getProblemList, getGroupDetail, addGroupPowerPoint, updateGroupHideStatus, removeGroupMember, addGroupMember, deleteGroup, createGroup, updateGroupProfile } from '@/api/group';
+import { getGroupOverview, getProblemList, getGroupDetail, addGroupPowerPoint, updateGroupHideStatus, removeGroupMember, addGroupMember, deleteGroup, createGroup, updateGroupProfile, getSimLoginSession } from '@/api/group';
 import { getLightUserList } from '@/api/user';
 import UserRoleTag from '@/components/UserRoleTag.vue';
+
+const route = useRoute();
 
 // 表格列定义
 const columns = [
@@ -445,10 +459,10 @@ const getProblemStatusClass = (pid) => {
   return 'status-locked';
 };
 
-// 获取题目工具提示内容
-const getProblemTooltip = (problem) => {
+// 获取题目工具提示详细信息
+const getProblemTooltipDetails = (problem) => {
   const progress = currentGroupDetail.value?.progress?.data;
-  if (!progress) return problem.title;
+  if (!progress) return '';
 
   const unlockTime = progress.ProblemUnlockTime[problem.pid];
   const submissions = progress.ProblemAnswerSubmissionsCount[problem.pid] || 0;
@@ -456,12 +470,45 @@ const getProblemTooltip = (problem) => {
   const hints = progress.OpenedHints[problem.pid] || [];
 
   return `
-    ${problem.title}<br>
     ${unlockTime ? `解锁时间: ${formatTime(new Date(unlockTime))}` : '未解锁'}<br>
     错误次数: ${submissions}<br>
     额外次数: ${additional}<br>
     ${hints.length ? `已开放提示: ${hints.join(', ')}` : ''}
   `;
+};
+
+// 处理模拟登录
+const handleSimulateLogin = async (pid) => {
+  if (!currentGroup.value) {
+    message.error('未选择队伍');
+    return;
+  }
+
+  try {
+    // 调用API获取模拟登录会话
+    const result = await getSimLoginSession(currentGroup.value.gid);
+    const simUser = result.sim_user;
+
+    // 构建预览页面URL参数
+    const params = new URLSearchParams({
+      pid: pid,
+      uid: simUser.uid,
+      username: simUser.username,
+      roleid: simUser.roleid,
+      token: simUser.token,
+      sk: simUser.sk,
+      etc: simUser.etc,
+      color: simUser.color
+    });
+
+    // 在新窗口中打开预览页面
+    const previewUrl = `/preview?${params.toString()}`;
+    window.open(previewUrl, '_blank');
+
+  } catch (error) {
+    console.error('模拟登录失败:', error);
+    message.error('模拟登录失败');
+  }
 };
 
 // 获取组队列表
@@ -472,7 +519,8 @@ const fetchGroupList = async () => {
       queryParams.value.order,
       queryParams.value.groupname,
       queryParams.value.page_num,
-      queryParams.value.page_size
+      queryParams.value.page_size,
+      null
     );
     groupList.value = result.groups;
     total.value = result.sum_rows;
@@ -731,10 +779,49 @@ const handleGroupSubmit = async () => {
   }
 };
 
-onMounted(() => {
-  fetchGroupList();
-  fetchProblemList();
-  fetchAllUsers();
+// 处理URL参数gid，自动展开详情抽屉
+const handleGidParam = async () => {
+  const gid = route.query.gid;
+  if (gid) {
+    // 查找当前组队列表中是否有该gid的队伍
+    let targetGroup = groupList.value.find(group => group.gid == gid);
+    
+    if (!targetGroup) {
+      // 如果当前列表中没有，则使用gid参数重新请求
+      try {
+        const result = await getGroupOverview(1, '', 1, 10, parseInt(gid));
+        if (result.groups && result.groups.length > 0) {
+          targetGroup = result.groups[0];
+        }
+      } catch (error) {
+        console.error('获取指定队伍信息失败:', error);
+        message.error('获取队伍信息失败');
+        return;
+      }
+    }
+    
+    if (targetGroup) {
+      handleViewDetail(targetGroup);
+    } else {
+      message.warning(`未找到GID为${gid}的队伍`);
+    }
+  }
+};
+
+// 监听路由参数变化
+watch(() => route.query.gid, (newGid) => {
+  if (newGid) {
+    handleGidParam();
+  }
+});
+
+onMounted(async () => {
+  await fetchGroupList();
+  await fetchProblemList();
+  await fetchAllUsers();
+  
+  // 处理URL参数
+  handleGidParam();
 });
 </script>
 
@@ -983,5 +1070,24 @@ h1 {
 
 :deep(.ant-collapse-content) {
   border-top: 1px solid #ff4d4f;
+}
+
+.problem-tooltip-content {
+  max-width: 300px;
+}
+
+.problem-title {
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.simulate-btn {
+  margin-bottom: 8px;
+}
+
+.problem-details {
+  font-size: 12px;
+  line-height: 1.4;
 }
 </style> 
