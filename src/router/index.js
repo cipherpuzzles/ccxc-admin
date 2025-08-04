@@ -24,6 +24,7 @@ const SystemSettings = () => import('../views/SystemSettings.vue')
 const OrganizerManagement = () => import('../views/OrganizerManagement.vue')
 const PluginManagement = () => import('../views/PluginManagement.vue')
 const CollaborationManagement = () => import('../views/CollaborationManagement.vue')
+const PerformanceMonitoring = () => import('../views/PerformanceMonitoring.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -137,6 +138,11 @@ const router = createRouter({
           path: 'collaboration',
           name: 'collaboration',
           component: CollaborationManagement
+        },
+        {
+          path: 'performance',
+          name: 'performance',
+          component: PerformanceMonitoring
         }
       ]
     },

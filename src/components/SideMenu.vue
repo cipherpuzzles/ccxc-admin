@@ -22,7 +22,8 @@ import {
   MacCommandOutlined,
   UserSwitchOutlined,
   CodepenCircleOutlined,
-  ShareAltOutlined
+  ShareAltOutlined,
+  LineChartOutlined
 } from '@ant-design/icons-vue';
 import * as AntdIcons from '@ant-design/icons-vue';
 import { useRouter, useRoute } from 'vue-router';
@@ -188,6 +189,10 @@ onMounted(async () => {
       <a-menu-item key="/userbackend/collaboration">
         <share-alt-outlined />
         <span>同步协作管理</span>
+      </a-menu-item>
+      <a-menu-item key="/userbackend/performance">
+        <line-chart-outlined />
+        <span>性能监控</span>
       </a-menu-item>
     </a-sub-menu>
   </a-menu>

@@ -14,6 +14,7 @@
     "axios": "^1.6.7",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
+    "echarts": "^6.0.0",
     "isomorphic-dompurify": "^2.24.0",
     "marked": "^15.0.11",
     "monaco-editor": "^0.52.2",
