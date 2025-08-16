@@ -17,7 +17,13 @@ onMounted(() => {
       roleid: urlParams.get('roleid'),
       token: urlParams.get('token'),
       sk: urlParams.get('sk'),
-      etc: urlParams.get('etc')
+      etc: urlParams.get('etc'),
+      color: urlParams.get('color')
+    }
+
+    //如果没有color，则随机生成一个
+    if (!userInfo.color) {
+      userInfo.color = '#' + Math.floor(Math.random()*16777215).toString(16)
     }
     
     userStore.setUserInfo(userInfo)

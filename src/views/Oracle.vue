@@ -161,6 +161,30 @@
               {{ currentRecord.is_reply === 1 ? formatTime(currentRecord.reply_time) : '未回复' }}
             </span>
           </div>
+
+          <!-- 正在查看的用户标签 -->
+          <div v-if="currentViewers.length > 0" class="awareness-tags">
+            <div class="awareness-label">正在查看：</div>
+            <div class="awareness-users">
+              <a-tag
+                v-for="user in currentViewers"
+                :key="user.id"
+                :style="{
+                  backgroundColor: user.color,
+                  color: adjustTextColor(user.color),
+                  border: `1px solid ${user.color}`,
+                  margin: '2px 4px 2px 0'
+                }"
+              >
+                <template v-if="user.typing">
+                  ✏️ {{ user.name }}
+                </template>
+                <template v-else>
+                  {{ user.name }}
+                </template>
+              </a-tag>
+            </div>
+          </div>
           
           <!-- Monaco编辑器 -->
           <div class="editor-container">
@@ -168,6 +192,8 @@
               v-model:value="replyContent"
               language="markdown"
               :height="300"
+              @focus="handleEditorFocus"
+              @blur="handleEditorBlur"
             />
           </div>
           
@@ -199,14 +225,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import { getSelectItems } from '@/api/log';
 import { getOracleList, replyOracle } from '@/api/oracle';
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
+import ySyncDocs from '@/lib/preview/ySyncDocs';
+import { useUserStore } from '@/stores/user';
+import { adjustTextColor } from '@/lib/preview/utils';
 
+const userStore = useUserStore();
 // 查询参数
 const queryParams = ref({
   gid: [],
@@ -214,6 +244,12 @@ const queryParams = ref({
   reply: 0,
   order: 0,
   page: 1
+});
+
+//同步感知
+const syncData = reactive({
+  aware: [] //感知数据 {color: "#013EB3", oi: 17, name: "用户名", typing: false} 
+  // color为主题色，oi为当前激活的问题编号，name为当前用户名，typing为是否正在输入。设置感知数据的时候只需要设置oi和typing。
 });
 
 // 表格数据
@@ -234,8 +270,20 @@ const problemOptions = ref([]);
 const drawerVisible = ref(false);
 const currentRecord = ref(null);
 const replyContent = ref('');
-const extendFunction = ref(['1', '2', '3']);
+const extendFunction = ref([]);
 const submitting = ref(false);
+
+// 编辑器焦点状态
+const isEditorFocused = ref(false);
+
+// 当前正在查看的用户（过滤同一个 oracle_id 的用户）
+const currentViewers = computed(() => {
+  if (!currentRecord.value) return [];
+  
+  return syncData.aware.filter(user => 
+    user.oi === currentRecord.value.oracle_id
+  );
+});
 
 // 表格列定义
 const columns = [
@@ -406,10 +454,16 @@ const openDrawer = (record) => {
   if (record.extend_function) {
     extendFunction.value = record.extend_function.split(',');
   } else {
-    extendFunction.value = ['1', '2', '3'];
+    extendFunction.value = [];
   }
   
   drawerVisible.value = true;
+  
+  // 设置感知状态
+  ySyncDocs.setAwarenessState("oracle_aware", { 
+    oi: record.oracle_id, 
+    typing: false 
+  });
 };
 
 // 设置筛选条件
@@ -421,18 +475,88 @@ const setFilterProblem = (pid) => {
   queryParams.value.pid = [pid];
 };
 
+// 编辑器焦点事件处理
+const handleEditorFocus = () => {
+  isEditorFocused.value = true;
+  if (currentRecord.value) {
+    ySyncDocs.setAwarenessState("oracle_aware", { 
+      oi: currentRecord.value.oracle_id, 
+      typing: true 
+    });
+  }
+};
+
+const handleEditorBlur = () => {
+  isEditorFocused.value = false;
+  if (currentRecord.value) {
+    ySyncDocs.setAwarenessState("oracle_aware", { 
+      oi: currentRecord.value.oracle_id, 
+      typing: false 
+    });
+  }
+};
+
+// 监听回复内容变化，判断是否正在输入
+let typingTimer = null;
+watch(() => replyContent.value, () => {
+  if (!currentRecord.value || !isEditorFocused.value) return;
+  
+  // 清除之前的定时器
+  if (typingTimer) {
+    clearTimeout(typingTimer);
+  }
+  
+  // 设置正在输入状态
+  ySyncDocs.setAwarenessState("oracle_aware", { 
+    oi: currentRecord.value.oracle_id, 
+    typing: true 
+  });
+  
+  // 设置定时器，1秒后如果没有新的输入则设为不在输入
+  typingTimer = setTimeout(() => {
+    if (currentRecord.value && isEditorFocused.value) {
+      ySyncDocs.setAwarenessState("oracle_aware", { 
+        oi: currentRecord.value.oracle_id, 
+        typing: false 
+      });
+    }
+  }, 1000);
+});
+
 // 监听抽屉关闭
 watch(() => drawerVisible.value, (isOpen) => {
   if (!isOpen) {
+    // 取消感知状态
+    ySyncDocs.removeAwarenessState("oracle_aware");
+    
     currentRecord.value = null;
     replyContent.value = '';
-    extendFunction.value = ['1', '2', '3'];
+    extendFunction.value = [];
   }
 });
 
 onMounted(() => {
+  //连接ySync
+  ySyncDocs.userInfo = userStore;
+  ySyncDocs.connect(userStore.token, "adminTags").then(() => {
+    console.log("ySync 连接成功");
+  }).catch((err) => {
+    console.error("ySync 连接失败", err);
+  });
+
   fetchSelectItems();
   fetchOracleList();
+
+  //初始化感知
+  ySyncDocs.registerAwarenessFunc("oracle_aware", (aware) => {
+    syncData.aware = aware;
+  });
+});
+
+onBeforeUnmount(() => {
+  ySyncDocs.removeAwarenessState("oracle_aware");
+  ySyncDocs.unregisterAwarenessFunc("oracle_aware");
+  ySyncDocs.disconnect();
 });
 </script>
 
@@ -547,5 +671,37 @@ h1 {
 .submit-section {
   margin-top: 24px;
   text-align: right;
+}
+
+/* 感知标签样式 */
+.awareness-tags {
+  margin: 16px 0;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.awareness-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.awareness-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.awareness-users .ant-tag {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 </style> 

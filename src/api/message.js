@@ -32,11 +32,11 @@ export function sendMessage(gid, content) {
   });
 }
 
-// 设置站内信为已读
-export function setMessageRead(mid) {
+// 设置站内信读取状态
+export function setMessageRead(mid, type) {
   return request({
     url: '/v1/admin/set-read-message',
-    data: { mid }
+    data: { mid, type }
   });
 }
 

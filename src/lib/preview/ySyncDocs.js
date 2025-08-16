@@ -10,6 +10,7 @@ class YSyncDocs {
     userToken = null;
     userInfo = null;
     reconnecting = false;
+    connectType = "";
     status = reactive({
         connected: false,
         synced: false,
@@ -45,8 +46,9 @@ class YSyncDocs {
     isConnect() {
         return this.wsProvider !== undefined;
     }
-    async connect(userToken) {
+    async connect(userToken, type = "") {
         this.userToken = userToken;
+        this.connectType = type;
         if (this.wsProvider) {
             console.warn("WebSocket provider already exists. Disconnecting first.");
             await this.disconnect();
@@ -60,7 +62,8 @@ class YSyncDocs {
         const result = await response.json();
 
         const params = {
-            sessionId: userToken
+            sessionId: userToken,
+            type: this.connectType
         };
 
         this.wsProvider = new WebsocketProvider(result.ws_prefix, 'sync', this.yDoc, {
@@ -161,7 +164,7 @@ class YSyncDocs {
             }
 
             await this.disconnect();
-            await this.connect(this.userToken);
+            await this.connect(this.userToken, this.connectType);
             console.log("Reconnected to WebSocket with user token:", this.userToken);
         } catch (error) {
             console.error("Error during reconnection:", error);

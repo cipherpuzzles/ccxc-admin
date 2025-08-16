@@ -38,7 +38,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:value']);
+const emit = defineEmits(['update:value', 'focus', 'blur']);
 const editorContainer = ref(null);
 let editor = null;
 
@@ -88,6 +88,16 @@ const createEditor = async () => {
   editor.onDidChangeModelContent(() => {
     const value = editor.getValue();
     emit('update:value', value);
+  });
+
+  // 监听焦点事件
+  editor.onDidFocusEditorWidget(() => {
+    emit('focus');
+  });
+
+  // 监听失焦事件
+  editor.onDidBlurEditorWidget(() => {
+    emit('blur');
   });
 
   // 如果是题目脚本编辑器，加载对应的自定义补全

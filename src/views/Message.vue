@@ -10,6 +10,7 @@
           v-model:value="selectedGroupId"
           style="width: 240px"
           placeholder="请选择队伍"
+          show-search
           :options="groupOptions"
           :filter-option="filterGroupOption"
         />
@@ -29,6 +30,7 @@
               v-model:value="queryParams.gid"
               style="width: 240px"
               placeholder="请选择队伍"
+              show-search
               allowClear
               :options="groupOptions"
               :filter-option="filterGroupOption"
@@ -40,6 +42,14 @@
               <a-select-option :value="0">全部</a-select-option>
               <a-select-option :value="1">已读</a-select-option>
               <a-select-option :value="2">未读</a-select-option>
+            </a-select>
+          </a-form-item>
+          
+          <a-form-item label="方向">
+            <a-select v-model:value="queryParams.direction" style="width: 120px">
+              <a-select-option :value="0">全部</a-select-option>
+              <a-select-option :value="1">发送</a-select-option>
+              <a-select-option :value="2">接收</a-select-option>
             </a-select>
           </a-form-item>
           
@@ -120,12 +130,21 @@
               </a-button>
               
               <a-button 
-                v-if="record.is_read === 0" 
+                v-if="record.is_read === 0" type="primary"
                 size="small" 
-                @click="handleSetRead(record.mid)"
+                @click="handleSetRead(record.mid, 1)"
                 :loading="record.markingRead"
               >
                 标为已读
+              </a-button>
+              
+              <a-button 
+                v-if="record.is_read === 1" 
+                size="small" 
+                @click="handleSetRead(record.mid, 0)"
+                :loading="record.markingRead"
+              >
+                标为未读
               </a-button>
               
               <a-popconfirm
@@ -212,16 +231,41 @@
         <!-- 输入区域 -->
         <div class="message-input-area">
           <div class="input-actions">
-            <a-tooltip title="上传图片">
-              <a-button @click="showImageUploader">
-                <picture-outlined />
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="扩大编辑">
-              <a-button @click="showMessageEditor">
-                <expand-outlined />
-              </a-button>
-            </a-tooltip>
+            <div class="action-buttons">
+              <a-tooltip title="上传图片">
+                <a-button @click="showImageUploader">
+                  <picture-outlined />
+                </a-button>
+              </a-tooltip>
+              <a-tooltip title="扩大编辑">
+                <a-button @click="showMessageEditor">
+                  <expand-outlined />
+                </a-button>
+              </a-tooltip>
+            </div>
+            
+            <!-- 正在查看的用户标签 -->
+            <div v-if="currentViewers.length > 0" class="awareness-tags">
+              <span class="awareness-label">正在查看：</span>
+              <a-tag
+                v-for="user in currentViewers"
+                :key="user.id"
+                :style="{
+                  backgroundColor: user.color,
+                  color: adjustTextColor(user.color),
+                  border: `1px solid ${user.color}`,
+                  margin: '0 4px 0 0'
+                }"
+                size="small"
+              >
+                <template v-if="user.typing">
+                  ✏️ {{ user.name }}
+                </template>
+                <template v-else>
+                  {{ user.name }}
+                </template>
+              </a-tag>
+            </div>
           </div>
           
           <div class="input-container">
@@ -229,6 +273,8 @@
               v-model:value="messageInput"
               placeholder="请输入消息内容..."
               :auto-size="{ minRows: 3, maxRows: 6 }"
+              @focus="handleInputFocus"
+              @blur="handleInputBlur"
             />
             
             <a-button 
@@ -272,6 +318,8 @@
           v-model:value="messageInput"
           language="markdown"
           :height="400"
+          @focus="handleInputFocus"
+          @blur="handleInputBlur"
         />
       </div>
     </a-modal>
@@ -279,7 +327,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import { 
   SendOutlined, 
@@ -301,6 +349,11 @@ import UserRoleTag from '@/components/UserRoleTag.vue';
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue';
 import ImageUploader from '@/components/ImageUploader.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
+import ySyncDocs from '@/lib/preview/ySyncDocs';
+import { useUserStore } from '@/stores/user';
+import { adjustTextColor } from '@/lib/preview/utils';
+
+const userStore = useUserStore();
 
 // 队伍选择
 const selectedGroupId = ref(undefined);
@@ -313,9 +366,16 @@ const drawerVisible = ref(false);
 // 查询参数
 const queryParams = ref({
   gid: undefined,
-  read: 0,
+  read: 2,
   order: 0,
+  direction: 2, // 默认选择"接收"
   page: 1
+});
+
+//同步感知
+const syncData = reactive({
+  aware: [] //感知数据 {color: "#013EB3", gid: 1241, name: "用户名", typing: false} 
+  // color为主题色，gid为当前激活的队伍ID，name为当前用户名，typing为是否正在输入。设置感知数据的时候只需要设置gid和typing。
 });
 
 // 表格数据
@@ -372,6 +432,18 @@ const messageContainer = ref(null);
 const uploaderVisible = ref(false);
 const editorVisible = ref(false);
 const highlightedMid = ref(null);
+
+// 输入框焦点状态
+const isInputFocused = ref(false);
+
+// 当前正在查看的用户（过滤同一个 gid 的用户）
+const currentViewers = computed(() => {
+  if (!currentGroupId.value) return [];
+  
+  return syncData.aware.filter(user => 
+    user.gid === currentGroupId.value
+  );
+});
 
 // 获取队伍列表
 const fetchGroupList = async () => {
@@ -443,8 +515,9 @@ const handleSearch = () => {
 const handleReset = () => {
   queryParams.value = {
     gid: undefined,
-    read: 0,
+    read: 2,
     order: 0,
+    direction: 2, // 重置为默认值"接收"
     page: 1
   };
   fetchMessageList();
@@ -507,12 +580,19 @@ const showMessageEditor = () => {
 // 关闭消息编辑器
 const closeMessageEditor = () => {
   editorVisible.value = false;
+  // 关闭编辑器时取消输入状态
+  if (currentGroupId.value) {
+    ySyncDocs.setAwarenessState("message_aware", { 
+      gid: currentGroupId.value, 
+      typing: false 
+    });
+  }
 };
 
 // 标记消息为已读
 const markMessageAsRead = async (mid) => {
   try {
-    await setMessageRead(mid);
+    await setMessageRead(mid, 1);
     // 更新本地消息状态
     const msgIndex = groupMessageList.value.findIndex(msg => msg.mid === mid);
     if (msgIndex !== -1) {
@@ -532,6 +612,12 @@ const openMessageDrawer = (gid, mid) => {
   }
   
   drawerVisible.value = true;
+  
+  // 设置感知状态
+  ySyncDocs.setAwarenessState("message_aware", { 
+    gid: currentGroupId.value, 
+    typing: false 
+  });
   fetchGroupMessages(currentGroupId.value).then(() => {
     if (mid) {
       // 查找对应的消息
@@ -539,7 +625,7 @@ const openMessageDrawer = (gid, mid) => {
       
       // 如果是未读的接收消息，自动标记为已读
       if (openedMessage && openedMessage.direction === 0 && openedMessage.is_read === 0) {
-        handleSetRead(mid);
+        handleSetRead(mid, 1);
       }
       
       // 高亮显示并滚动到对应位置
@@ -571,27 +657,33 @@ const closeMessageDrawer = () => {
 // 监听抽屉状态，关闭时清理数据
 watch(() => drawerVisible.value, (isOpen) => {
   if (!isOpen) {
+    // 取消感知状态
+    ySyncDocs.removeAwarenessState("message_aware");
+    
     // 抽屉关闭时清空数据
     groupMessageList.value = [];
     messageInput.value = '';
     highlightedMid.value = null;
+    isInputFocused.value = false;
   }
 });
 
-// 标记列表中消息为已读
-const handleSetRead = async (mid) => {
+// 标记列表中消息读取状态
+const handleSetRead = async (mid, type) => {
   const target = messageList.value.find(item => item.mid === mid);
   if (target) {
     target.markingRead = true;
     try {
-      const result = await setMessageRead(mid);
+      const result = await setMessageRead(mid, type);
       if (result.status === 1) {
-        message.success('标记为已读成功');
+        const actionText = type === 1 ? '已读' : '未读';
+        message.success(`标记为${actionText}成功`);
         // 更新本地数据状态
-        target.is_read = 1;
+        target.is_read = type;
       }
     } catch (error) {
-      console.error('标记已读失败:', error);
+      const actionText = type === 1 ? '已读' : '未读';
+      console.error(`标记${actionText}失败:`, error);
     } finally {
       target.markingRead = false;
     }
@@ -630,9 +722,76 @@ const setFilterGroup = (gid) => {
   queryParams.value.gid = gid;
 };
 
+// 输入框焦点事件处理
+const handleInputFocus = () => {
+  isInputFocused.value = true;
+  if (currentGroupId.value) {
+    ySyncDocs.setAwarenessState("message_aware", { 
+      gid: currentGroupId.value, 
+      typing: true 
+    });
+  }
+};
+
+const handleInputBlur = () => {
+  isInputFocused.value = false;
+  if (currentGroupId.value) {
+    ySyncDocs.setAwarenessState("message_aware", { 
+      gid: currentGroupId.value, 
+      typing: false 
+    });
+  }
+};
+
+// 监听消息输入变化，判断是否正在输入
+let typingTimer = null;
+watch(() => messageInput.value, () => {
+  if (!currentGroupId.value || !isInputFocused.value) return;
+  
+  // 清除之前的定时器
+  if (typingTimer) {
+    clearTimeout(typingTimer);
+  }
+  
+  // 设置正在输入状态
+  ySyncDocs.setAwarenessState("message_aware", { 
+    gid: currentGroupId.value, 
+    typing: true 
+  });
+  
+  // 设置定时器，1秒后如果没有新的输入则设为不在输入
+  typingTimer = setTimeout(() => {
+    if (currentGroupId.value && isInputFocused.value) {
+      ySyncDocs.setAwarenessState("message_aware", { 
+        gid: currentGroupId.value, 
+        typing: false 
+      });
+    }
+  }, 1000);
+});
+
 onMounted(() => {
+  //连接ySync
+  ySyncDocs.userInfo = userStore;
+  ySyncDocs.connect(userStore.token, "adminTags").then(() => {
+    console.log("ySync 连接成功");
+  }).catch((err) => {
+    console.error("ySync 连接失败", err);
+  });
+
   fetchGroupList();
   fetchMessageList();
+
+  //初始化感知
+  ySyncDocs.registerAwarenessFunc("message_aware", (aware) => {
+    syncData.aware = aware;
+  });
+});
+
+onBeforeUnmount(() => {
+  ySyncDocs.removeAwarenessState("message_aware");
+  ySyncDocs.unregisterAwarenessFunc("message_aware");
+  ySyncDocs.disconnect();
 });
 </script>
 
@@ -812,8 +971,37 @@ a:hover {
 
 .input-actions {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 8px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* 感知标签样式 */
+.awareness-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.awareness-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.awareness-tags .ant-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .input-container {

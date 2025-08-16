@@ -8,6 +8,7 @@ export const useUserStore = defineStore('user', {
     token: '',
     sk: '',
     etc: '',
+    color: '',
   }),
   
   actions: {
@@ -18,6 +19,7 @@ export const useUserStore = defineStore('user', {
       this.token = userInfo.token
       this.sk = userInfo.sk
       this.etc = userInfo.etc
+      this.color = userInfo.color
     },
     
     clearUserInfo() {
@@ -27,6 +29,7 @@ export const useUserStore = defineStore('user', {
       this.token = ''
       this.sk = ''
       this.etc = ''
+      this.color = ''
     },
     
     isLoggedIn() {
