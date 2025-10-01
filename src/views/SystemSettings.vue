@@ -118,6 +118,15 @@
                   />
                 </a-form-item>
               </a-col>
+              <a-col :span="6">
+                <a-form-item label="用户最多同时登录数量">
+                  <a-input-number 
+                    v-model:value="formData.UserSessionMaxCount" 
+                    :min="1" 
+                    style="width: 100%" 
+                  />
+                </a-form-item>
+              </a-col>
             </a-row>
             
             <a-row :gutter="24" style="margin-top: 16px;">
@@ -218,6 +227,7 @@ const formData = ref({
   ProjectFrontendPrefix: '',
   GamePrefix: '',
   UserSessionTimeout: 0,
+  UserSessionMaxCount: 1,
   ShowAnalysis: 0,
   EnableGuestMode: 0,
   AdminAiEnable: 0,
@@ -317,6 +327,7 @@ const saveSettings = async () => {
     const submitData = {
       ...formData.value,
       UserSessionTimeout: Number(formData.value.UserSessionTimeout),
+      UserSessionMaxCount: Number(formData.value.UserSessionMaxCount),
       ShowAnalysis: Number(formData.value.ShowAnalysis),
       EnableGuestMode: Number(formData.value.EnableGuestMode),
       AdminAiEnable: Number(formData.value.AdminAiEnable),
